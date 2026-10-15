@@ -106,6 +106,21 @@ npm test
 ```
 Tests create users with `auth-test-...@example.test` emails and delete only those.
 
+## Frontend
+**Environment variable** (`frontend/.env`, copied from `frontend/.env.example`):
+
+| Variable | Meaning |
+|---|---|
+| `VITE_API_URL` | Base URL of the backend API, e.g. `http://localhost:5000`. Restart `npm run dev` after changing it. |
+
+**How auth works in the UI**
+- `/register` and `/login` call the auth API. The returned token is stored in `localStorage` (key `token`) and sent as `Authorization: Bearer <token>` on every request.
+- On page load, if a token is stored, the app calls `GET /api/auth/me` to restore the user. If that fails the token is cleared.
+- `/books` is protected: logged-out visitors are redirected to `/login`. Logged-in users who open `/login` or `/register` are redirected to `/books`.
+- If the API answers `401` for any other request (for example an expired token), the token is cleared and the user is sent to `/login`. A `401` on the login or register form is shown as an error message instead.
+- Logout clears the token. Unknown URLs redirect to `/`.
+- `/books` is a placeholder for now; the book pages come next.
+
 ## Seeded admin account
 Email and password come from `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `backend/.env`. Change them before using this anywhere real.
 
