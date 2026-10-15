@@ -118,8 +118,24 @@ Tests create users with `auth-test-...@example.test` emails and delete only thos
 - On page load, if a token is stored, the app calls `GET /api/auth/me` to restore the user. If that fails the token is cleared.
 - `/books` is protected: logged-out visitors are redirected to `/login`. Logged-in users who open `/login` or `/register` are redirected to `/books`.
 - If the API answers `401` for any other request (for example an expired token), the token is cleared and the user is sent to `/login`. A `401` on the login or register form is shown as an error message instead.
-- Logout clears the token. Unknown URLs redirect to `/`.
-- `/books` is a placeholder for now; the book pages come next.
+- Logout clears the token. Unknown URLs show a "Page not found" page.
+- `/dashboard` and `/users` are admin-only: other users are redirected to `/books` (the backend is the real check). Both are "Coming soon" placeholders, and so is the content of `/books` for now.
+
+**Frontend structure** (`frontend/src`)
+
+| Folder | What is in it |
+|---|---|
+| `api/` | Axios client, token storage, 401 handling |
+| `context/` | `AuthContext.jsx` (provider), `auth-context.js`, `useAuth.js` |
+| `components/ui/` | Shared building blocks: `Button`, `Card`, `Badge`, `FormField`, `ErrorBox`, `Skeleton`, `EmptyState`, `Logo`, `Icon` |
+| `components/guards/` | `ProtectedRoute`, `GuestRoute`, `AdminRoute` |
+| `components/` | `Sidebar`, `TopBar`, `AuthSplit` (shared login/register layout) |
+| `layouts/` | `GuestLayout` (logged-out pages) and `AppLayout` (sidebar + top bar for logged-in pages) |
+| `config/` | `app.js` (app name) and `nav.js` (sidebar links and which roles see them) |
+| `pages/` | One file per page |
+| `lib/` | Small helpers (form checks, page title hook) |
+
+**Changing the theme:** all colors, the font and the corner radius are tokens in the `@theme` block at the top of `frontend/src/index.css`. Components only use token classes such as `bg-card`, `text-ink`, `bg-accent` or `rounded-card`, so editing a value there changes the whole app. Token groups: sidebar, surface/text, accent (also used for the keyboard focus ring), book status colors, danger, radius. To rename the app, edit `APP_NAME` in `frontend/src/config/app.js`. To add a sidebar link, add an entry to `frontend/src/config/nav.js`.
 
 ## Seeded admin account
 Email and password come from `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `backend/.env`. Change them before using this anywhere real.

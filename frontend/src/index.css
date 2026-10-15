@@ -1,2 +1,65 @@
 /* Loads all Tailwind utility classes */
 @import "tailwindcss";
+
+/*
+  Theme tokens. Components only use these (bg-card, text-ink, border-line, rounded-card...)
+  so the whole look can be changed here. Each --color-* also becomes bg-*, text-*, border-*, etc.
+*/
+@theme {
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+
+  /* Dark sidebar */
+  --color-sidebar: #111318;
+  --color-sidebar-hover: #1c1f26;
+  --color-on-sidebar: #f3f4f6;
+  --color-on-sidebar-muted: #9ca3af;
+
+  /* Surfaces and text */
+  --color-surface: #f3f4f6; /* page background */
+  --color-card: #ffffff;
+  --color-line: #e5e7eb; /* dividers and card borders */
+  --color-edge: #6b7280; /* input borders (3:1 or better against white) */
+  --color-ink: #111318; /* main text */
+  --color-on-ink: #ffffff; /* text on ink-colored buttons */
+  --color-muted: #4b5563; /* secondary text (4.5:1 on surface) */
+
+  /* Accent (amber) */
+  --color-accent: #f59e0b;
+  --color-accent-hover: #d97706;
+  --color-accent-soft: #fef3c7;
+  --color-on-accent: #111318;
+  --color-focus: #f59e0b; /* keyboard focus ring */
+
+  /* Book status colors: strong color for text, soft color for the badge background */
+  --color-reading: #2563eb;
+  --color-reading-soft: #dbeafe;
+  --color-completed: #15803d;
+  --color-completed-soft: #dcfce7;
+  --color-to-read: #475569;
+  --color-to-read-soft: #e2e8f0;
+
+  /* Errors and destructive actions */
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-on-danger: #ffffff;
+
+  /* Corner radius */
+  --radius-card: 1rem;
+  --radius-field: 0.75rem;
+  --radius-panel: 3rem; /* big rounded edge of the login panel */
+}
+
+/* Page defaults */
+body {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Visible keyboard focus. Add the class "focus-ring" to every button, link and input. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
