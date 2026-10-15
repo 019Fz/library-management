@@ -9,7 +9,8 @@
     "start": "tsx src/server.js",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "test": "vitest run"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -17,10 +18,14 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.8",
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "jsonwebtoken": "9.0.3",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "prisma": "7.10.0",
-    "tsx": "^4.23.15"
+    "supertest": "7.3.1",
+    "tsx": "^4.23.15",
+    "vitest": "5.0.4"
   }
 }
