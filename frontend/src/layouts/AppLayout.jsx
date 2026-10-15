@@ -7,6 +7,8 @@ import TopBar from "../components/TopBar.jsx";
 export default function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
+  // The top-bar slot element; pages reach it through the Outlet context (see TopBarActions)
+  const [actionsSlot, setActionsSlot] = useState(null);
 
   // Close the drawer and give focus back to the menu button
   const closeMenu = useCallback(() => {
@@ -38,9 +40,14 @@ export default function AppLayout() {
     <div className="min-h-dvh bg-surface">
       <Sidebar open={menuOpen} onClose={closeMenu} onNavigate={() => setMenuOpen(false)} />
       <div className="lg:pl-64">
-        <TopBar menuOpen={menuOpen} onMenuClick={() => setMenuOpen(true)} menuButtonRef={menuButtonRef} />
+        <TopBar
+          menuOpen={menuOpen}
+          onMenuClick={() => setMenuOpen(true)}
+          menuButtonRef={menuButtonRef}
+          actionsRef={setActionsSlot}
+        />
         <main className="p-4 sm:p-6">
-          <Outlet />
+          <Outlet context={{ actionsSlot }} />
         </main>
       </div>
     </div>

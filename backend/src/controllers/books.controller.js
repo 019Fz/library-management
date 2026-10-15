@@ -73,6 +73,26 @@ export async function listBooks(req, res) {
   res.json({ books: books.map(bookView), page: query.page, limit: query.limit, total });
 }
 
+// The caller's genres: duplicates that differ only by case are collapsed, sorted A-Z
+export async function listGenres(req, res) {
+  const rows = await prisma.book.findMany({
+    where: { userId: req.user.id },
+    distinct: ["genre"],
+    select: { genre: true },
+  });
+
+  // Code-point order puts "Sci-Fi" before "sci-fi", so the capitalised spelling is the one kept
+  const spellings = rows.map((row) => row.genre).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const byLowercase = new Map();
+  for (const genre of spellings) {
+    const key = genre.toLowerCase();
+    if (!byLowercase.has(key)) byLowercase.set(key, genre);
+  }
+
+  const genres = [...byLowercase.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  res.json({ genres });
+}
+
 export async function getBook(req, res) {
   const id = parse(idParamSchema, req.params.id, res);
   if (id === null) return;

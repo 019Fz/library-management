@@ -312,3 +312,53 @@ describe("GET, PATCH and DELETE /api/books/:id", () => {
     expect((await del(owner, book.id)).status).toBe(404);
   });
 });
+
+describe("GET /api/books/genres", () => {
+  let user;
+  let other;
+
+  beforeAll(async () => {
+    user = await newUser();
+    other = await newUser();
+
+    for (const genre of ["sci-fi", "Sci-Fi", "Fantasy", "programming", "Fantasy"]) {
+      await post(user, { ...validBook, genre });
+    }
+    await post(other, { ...validBook, genre: "Secret Genre" });
+  });
+
+  it("returns the caller's genres, sorted A-Z, with case-insensitive duplicates collapsed", async () => {
+    const res = await get(user, "/genres");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ genres: ["Fantasy", "programming", "Sci-Fi"] });
+  });
+
+  it("never includes another user's genres", async () => {
+    const mine = await get(user, "/genres");
+    const theirs = await get(other, "/genres");
+
+    expect(mine.body.genres).not.toContain("Secret Genre");
+    expect(theirs.body.genres).toEqual(["Secret Genre"]);
+  });
+
+  it("returns an empty list for a user without books", async () => {
+    const empty = await newUser();
+    const res = await get(empty, "/genres");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ genres: [] });
+  });
+
+  it("is not treated as a book id", async () => {
+    const res = await get(user, "/genres");
+
+    expect(res.status).toBe(200); // an id route would answer 400 "Book id must be a positive integer"
+    expect(Array.isArray(res.body.genres)).toBe(true);
+  });
+
+  it("returns 401 without a token", async () => {
+    const res = await request(app).get("/api/books/genres");
+    expect(res.status).toBe(401);
+  });
+});

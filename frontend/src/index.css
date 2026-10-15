@@ -28,7 +28,9 @@
   --color-accent-hover: #d97706;
   --color-accent-soft: #fef3c7;
   --color-on-accent: #111318;
-  --color-focus: #f59e0b; /* keyboard focus ring */
+  /* Keyboard focus ring: ink on light backgrounds, amber on dark ones (3:1 or better on both) */
+  --color-focus: #111318;
+  --color-focus-dark: #f59e0b;
 
   /* Book status colors: strong color for text, soft color for the badge background */
   --color-reading: #2563eb;
@@ -42,6 +44,25 @@
   --color-danger: #b91c1c;
   --color-danger-soft: #fee2e2;
   --color-on-danger: #ffffff;
+
+  /* Generated book covers: eight gradients (all dark enough for white text) */
+  --color-on-cover: #ffffff;
+  --color-cover-1-from: #312e81;
+  --color-cover-1-to: #4f46e5;
+  --color-cover-2-from: #134e4a;
+  --color-cover-2-to: #0f766e;
+  --color-cover-3-from: #881337;
+  --color-cover-3-to: #be123c;
+  --color-cover-4-from: #78350f;
+  --color-cover-4-to: #b45309;
+  --color-cover-5-from: #4c1d95;
+  --color-cover-5-to: #7c3aed;
+  --color-cover-6-from: #064e3b;
+  --color-cover-6-to: #047857;
+  --color-cover-7-from: #1e3a8a;
+  --color-cover-7-to: #2563eb;
+  --color-cover-8-from: #164e63;
+  --color-cover-8-to: #0e7490;
 
   /* Corner radius */
   --radius-card: 1rem;
@@ -62,4 +83,9 @@ body {
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;
   }
+}
+
+/* Put this on a dark container (sidebar, login panel): every focus-ring inside turns amber */
+@utility focus-on-dark {
+  --color-focus: var(--color-focus-dark);
 }

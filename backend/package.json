@@ -10,6 +10,7 @@
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
     "seed": "prisma db seed",
+    "seed:demo": "tsx prisma/seed-demo.js",
     "test": "vitest run"
   },
   "dependencies": {

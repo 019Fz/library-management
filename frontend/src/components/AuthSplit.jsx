@@ -40,7 +40,7 @@ export default function AuthSplit({ panelSide = "right", question, action, butto
 
       {/* Desktop panel with a large rounded edge on the side facing the form */}
       <aside
-        className={`hidden flex-col items-center justify-center gap-6 bg-sidebar px-12 text-center text-on-sidebar lg:flex ${
+        className={`focus-on-dark hidden flex-col items-center justify-center gap-6 bg-sidebar px-12 text-center text-on-sidebar lg:flex ${
           panelOnLeft ? "rounded-r-panel lg:order-first" : "rounded-l-panel"
         }`}
       >

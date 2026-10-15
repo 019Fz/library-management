@@ -26,7 +26,7 @@ export default function Sidebar({ open, onClose, onNavigate }) {
 
       <aside
         id="app-sidebar"
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar text-on-sidebar transition-[transform,visibility] duration-200 motion-reduce:transition-none lg:translate-x-0 ${
+        className={`focus-on-dark fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar text-on-sidebar transition-[transform,visibility] duration-200 motion-reduce:transition-none lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full max-lg:invisible"
         }`}
       >
