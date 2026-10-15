@@ -71,6 +71,33 @@ Protected routes need the header `Authorization: Bearer <token>`.
 
 Responses never include `passwordHash`. Validation errors return `400` with a `details` list.
 
+## Books API
+All routes need `Authorization: Bearer <token>` and only ever see the logged-in user's own books. A missing book and another user's book both return `404 {"error":"Book not found"}`. An invalid `:id` (not a positive integer) returns `400`.
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/books` | Create a book. Returns `201` with the book. The owner is always the caller; any `userId` in the body is ignored. |
+| GET | `/api/books` | List your books (see query parameters). Returns `{ books, page, limit, total }`. |
+| GET | `/api/books/:id` | Get one book. |
+| PATCH | `/api/books/:id` | Partial update. Send at least one field. The owner cannot be changed. |
+| DELETE | `/api/books/:id` | Delete a book. Returns `204`. |
+
+**Book fields:** `title` (max 200), `author` (max 150), `genre` (max 50), `price` (JSON number, 0 to 99999999.99, at most 2 decimals), `status` (`reading`, `completed` or `to-read`; default `to-read`).
+
+**List query parameters:**
+
+| Param | Values | Default |
+|---|---|---|
+| `genre` | exact match, case-insensitive | none |
+| `status` | `reading`, `completed`, `to-read` | none |
+| `q` | case-insensitive text found in title or author | none |
+| `sort` | `createdAt`, `title`, `price` | `createdAt` |
+| `order` | `asc`, `desc` | `desc` |
+| `page` | integer >= 1 | `1` |
+| `limit` | integer 1 to 50 | `10` |
+
+Invalid query values return `400`.
+
 ## Tests
 Backend tests use Vitest + Supertest and run against the real database, so Postgres must be running and `JWT_SECRET` must be set:
 ```bash
