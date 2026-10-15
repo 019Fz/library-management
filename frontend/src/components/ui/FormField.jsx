@@ -1,5 +1,6 @@
 // A label plus an input. With "revealable" a password field gets a show/hide button.
-import { useState } from "react";
+// Optional: "error" shows a message under the field; "inputMode", "list" (datalist id), "placeholder", "required".
+import { useId, useState } from "react";
 import Icon from "./Icon.jsx";
 
 export default function FormField({
@@ -11,8 +12,14 @@ export default function FormField({
   autoComplete,
   maxLength,
   revealable = false,
+  error,
+  inputMode,
+  list,
+  placeholder,
+  required = true,
 }) {
   const [visible, setVisible] = useState(false);
+  const errorId = useId();
   const inputType = revealable && visible ? "text" : type;
 
   return (
@@ -29,10 +36,15 @@ export default function FormField({
           onChange={(event) => onChange(event.target.value)}
           autoComplete={autoComplete}
           maxLength={maxLength}
-          required
-          className={`block min-h-11 w-full rounded-field border border-edge bg-card px-4 py-2 text-base text-ink focus-ring ${
-            revealable ? "pr-14" : ""
-          }`}
+          inputMode={inputMode}
+          list={list}
+          placeholder={placeholder}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          className={`block min-h-11 w-full rounded-field border bg-card px-4 py-2 text-base text-ink focus-ring ${
+            error ? "border-danger" : "border-edge"
+          } ${revealable ? "pr-14" : ""}`}
         />
         {revealable && (
           <button
@@ -46,6 +58,11 @@ export default function FormField({
           </button>
         )}
       </div>
+      {error && (
+        <p id={errorId} className="mt-1 text-sm text-danger">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
