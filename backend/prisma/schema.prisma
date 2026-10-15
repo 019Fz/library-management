@@ -1,0 +1,47 @@
+// Prisma schema: User and Book (one user has many books).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum BookStatus {
+  reading
+  completed
+  to_read @map("to-read") // stored as "to-read" in the database
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(user)
+  createdAt    DateTime @default(now())
+  books        Book[]
+
+  @@map("users") // lowercase table name in Postgres
+}
+
+model Book {
+  id        Int        @id @default(autoincrement())
+  title     String
+  author    String
+  genre     String
+  price     Decimal    @db.Decimal(10, 2)
+  status    BookStatus @default(to_read)
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@map("books") // lowercase table name in Postgres
+}
