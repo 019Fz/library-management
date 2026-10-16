@@ -11,7 +11,7 @@
     "generate": "prisma generate",
     "seed": "prisma db seed",
     "seed:demo": "tsx prisma/seed-demo.js",
-    "test": "vitest run"
+    "test": "vitest run --no-file-parallelism"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

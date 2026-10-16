@@ -1,6 +1,7 @@
 // Book CRUD. Every query includes userId so users only ever touch their own books.
 import prisma from "../lib/prisma.js";
-import { toDbStatus, fromDbStatus } from "../lib/bookStatus.js";
+import { toDbStatus } from "../lib/bookStatus.js";
+import { bookView, parse, isRecordNotFound, buildBookFilter, dedupeGenres } from "../lib/bookHelpers.js";
 import {
   createBookSchema,
   updateBookSchema,
@@ -8,29 +9,9 @@ import {
   idParamSchema,
 } from "../validation/book.schemas.js";
 
-// Shape sent to the client: API status name, price as a number
-function bookView(book) {
-  return { ...book, status: fromDbStatus(book.status), price: Number(book.price) };
-}
-
-// Validate data with a schema. On failure sends a 400 and returns null.
-function parse(schema, data, res) {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    res.status(400).json({ error: "Validation failed", details: result.error.issues });
-    return null;
-  }
-  return result.data;
-}
-
 // Missing book and someone else's book look the same on purpose
 function sendNotFound(res) {
   return res.status(404).json({ error: "Book not found" });
-}
-
-// P2025 = Prisma found no record matching the where clause (id + userId)
-function isRecordNotFound(err) {
-  return err.code === "P2025";
 }
 
 export async function createBook(req, res) {
@@ -49,15 +30,8 @@ export async function listBooks(req, res) {
   const query = parse(listQuerySchema, req.query, res);
   if (!query) return;
 
-  const where = { userId: req.user.id };
-  if (query.genre) where.genre = { equals: query.genre, mode: "insensitive" };
-  if (query.status) where.status = toDbStatus(query.status);
-  if (query.q) {
-    where.OR = [
-      { title: { contains: query.q, mode: "insensitive" } },
-      { author: { contains: query.q, mode: "insensitive" } },
-    ];
-  }
+  // userId in the where clause keeps the list to the caller's own books
+  const where = { ...buildBookFilter(query), userId: req.user.id };
 
   // id is a tie-breaker so pages stay stable when sort values are equal
   const [books, total] = await prisma.$transaction([
@@ -81,16 +55,7 @@ export async function listGenres(req, res) {
     select: { genre: true },
   });
 
-  // Code-point order puts "Sci-Fi" before "sci-fi", so the capitalised spelling is the one kept
-  const spellings = rows.map((row) => row.genre).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  const byLowercase = new Map();
-  for (const genre of spellings) {
-    const key = genre.toLowerCase();
-    if (!byLowercase.has(key)) byLowercase.set(key, genre);
-  }
-
-  const genres = [...byLowercase.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-  res.json({ genres });
+  res.json({ genres: dedupeGenres(rows) });
 }
 
 export async function getBook(req, res) {

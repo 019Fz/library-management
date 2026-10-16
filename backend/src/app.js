@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import bookRoutes from "./routes/books.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -19,6 +20,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/books", bookRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Must stay last: unknown routes, then error handling
 app.use(notFound);

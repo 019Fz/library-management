@@ -44,9 +44,14 @@ export const listQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
-// :id must be a positive integer that fits a Postgres Int
-export const idParamSchema = z
-  .string()
-  .regex(/^[1-9]\d*$/, "Book id must be a positive integer")
-  .transform(Number)
-  .refine((id) => id <= 2147483647, "Book id must be a positive integer");
+// :id must be a positive integer that fits a Postgres Int. The label is used in the error message.
+export function makeIdParamSchema(label) {
+  const message = `${label} id must be a positive integer`;
+  return z
+    .string()
+    .regex(/^[1-9]\d*$/, message)
+    .transform(Number)
+    .refine((id) => id <= 2147483647, message);
+}
+
+export const idParamSchema = makeIdParamSchema("Book");
