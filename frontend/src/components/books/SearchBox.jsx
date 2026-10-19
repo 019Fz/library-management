@@ -1,12 +1,19 @@
 // Search box for the top bar. It sends the text 300 ms after you stop typing.
 //   value    = the search text currently in the URL
 //   onSearch = called with the new text
-import { useEffect, useRef, useState } from "react";
+//   label / placeholder = texts (defaults are for books)
+import { useEffect, useId, useRef, useState } from "react";
 import Icon from "../ui/Icon.jsx";
 
 const DEBOUNCE_MS = 300;
 
-export default function SearchBox({ value, onSearch }) {
+export default function SearchBox({
+  value,
+  onSearch,
+  label = "Search books by title or author",
+  placeholder = "Search title or author",
+}) {
+  const id = useId();
   const [text, setText] = useState(value);
   // The last text this box sent itself. It lets us tell our own URL update from an outside change.
   const lastSent = useRef(value);
@@ -46,18 +53,18 @@ export default function SearchBox({ value, onSearch }) {
 
   return (
     <form role="search" onSubmit={handleSubmit} className="relative w-full">
-      <label htmlFor="book-search" className="sr-only">
-        Search books by title or author
+      <label htmlFor={id} className="sr-only">
+        {label}
       </label>
       <span aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
         <Icon name="search" />
       </span>
       <input
-        id="book-search"
+        id={id}
         type="search"
         value={text}
         onChange={(event) => setText(event.target.value)}
-        placeholder="Search title or author"
+        placeholder={placeholder}
         autoComplete="off"
         enterKeyHint="search"
         className="block min-h-11 w-full rounded-full border border-edge bg-card pl-10 pr-11 text-base text-ink placeholder:text-muted focus-ring [&::-webkit-search-cancel-button]:appearance-none"

@@ -9,7 +9,9 @@ import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Books from './pages/Books.jsx'
-import ComingSoon from './pages/ComingSoon.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import Users from './pages/Users.jsx'
+import AdminBooks from './pages/AdminBooks.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 export default function App() {
@@ -31,8 +33,9 @@ export default function App() {
 
           {/* Admin only */}
           <Route element={<AdminRoute />}>
-            <Route path="/dashboard" element={<ComingSoon title="Dashboard" />} />
-            <Route path="/users" element={<ComingSoon title="Users" />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/admin/books" element={<AdminBooks />} />
           </Route>
         </Route>
       </Route>

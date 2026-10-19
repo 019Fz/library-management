@@ -1,10 +1,14 @@
 // Layout for logged-in pages: dark sidebar, top bar and the page content.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar.jsx";
 import TopBar from "../components/TopBar.jsx";
+import ErrorBoundary from "../components/ErrorBoundary.jsx";
 
 export default function AppLayout() {
+  // Only the path (not the ?search part) is used as the boundary's key: moving to another page clears a
+  // page error, but changing a filter must not remount the page (it would take the focus out of the search box)
+  const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
   // The top-bar slot element; pages reach it through the Outlet context (see TopBarActions)
@@ -47,7 +51,9 @@ export default function AppLayout() {
           actionsRef={setActionsSlot}
         />
         <main className="p-4 sm:p-6">
-          <Outlet context={{ actionsSlot }} />
+          <ErrorBoundary key={pathname}>
+            <Outlet context={{ actionsSlot }} />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

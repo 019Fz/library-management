@@ -1,4 +1,5 @@
 // One book in the grid, with edit and delete buttons.
+import { Link } from "react-router-dom";
 import BookCover from "./BookCover.jsx";
 import StatusBadge from "./StatusBadge.jsx";
 import Badge from "../ui/Badge.jsx";
@@ -6,18 +7,34 @@ import Skeleton from "../ui/Skeleton.jsx";
 import Icon from "../ui/Icon.jsx";
 import { formatPrice } from "../../lib/format.js";
 
+// The grid the cards sit in (shared by the books page and the admin books page)
+export const BOOK_GRID = "grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4";
+
 // Icon button for the card actions: 44px touch target, visible focus ring
 const ACTION =
   "flex h-11 w-11 items-center justify-center rounded-full text-muted hover:bg-surface hover:text-ink focus-ring";
 
-// onEdit / onDelete are called with the book and the clicked button (so focus can return to it)
-export default function BookCard({ book, onEdit, onDelete }) {
+// onEdit / onDelete are called with the book and the clicked button (so focus can return to it).
+// owner ({ id, name, email }) is only given on the admin page: it adds a link to that owner's books.
+export default function BookCard({ book, owner, onEdit, onDelete }) {
   return (
     <article className="group flex h-full flex-col rounded-card border border-line bg-card p-3 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       <BookCover title={book.title} author={book.author} genre={book.genre} />
 
       <h2 className="mt-3 line-clamp-2 font-semibold leading-snug text-ink">{book.title}</h2>
       <p className="truncate text-sm text-muted">{book.author}</p>
+
+      {owner && (
+        <Link
+          to={`/admin/books?userId=${owner.id}`}
+          state={{ ownerName: owner.name }}
+          aria-label={`Show books of ${owner.name}`}
+          className="mt-1 -mx-1 block min-h-11 rounded-field px-1 py-1 text-xs text-muted hover:bg-surface focus-ring"
+        >
+          <span className="block truncate font-medium text-ink">Owner: {owner.name}</span>
+          <span className="block truncate">{owner.email}</span>
+        </Link>
+      )}
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <Badge tone="neutral" className="max-w-full truncate">

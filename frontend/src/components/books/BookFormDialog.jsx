@@ -4,6 +4,7 @@
 //   onClose  = only resets the dialog state (it can be called more than once)
 //   onSaved  = called with "added", "updated" or "unchanged" after success
 //   onGone   = called when the book no longer exists (404 on edit)
+//   endpoint = API base: "/api/books" (your books) or "/api/admin/books" (admin, edit only)
 import { useId, useRef, useState } from "react";
 import api, { getApiError } from "../../api/client.js";
 import Modal from "../ui/Modal.jsx";
@@ -17,7 +18,16 @@ import { LIMITS, buildPatch, validateBookForm } from "../../lib/bookForm.js";
 const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
 const FIELD_ORDER = ["title", "author", "genre", "price"];
 
-export default function BookFormDialog({ open, book, genres, onClose, onSaved, onGone, getReturnFocus }) {
+export default function BookFormDialog({
+  open,
+  book,
+  genres,
+  onClose,
+  onSaved,
+  onGone,
+  getReturnFocus,
+  endpoint = "/api/books",
+}) {
   const [busy, setBusy] = useState(false);
 
   return (
@@ -29,13 +39,22 @@ export default function BookFormDialog({ open, book, genres, onClose, onSaved, o
       getReturnFocus={getReturnFocus}
       busy={busy}
     >
-      {open && <BookForm book={book} genres={genres} onBusyChange={setBusy} onSaved={onSaved} onGone={onGone} />}
+      {open && (
+        <BookForm
+          book={book}
+          genres={genres}
+          endpoint={endpoint}
+          onBusyChange={setBusy}
+          onSaved={onSaved}
+          onGone={onGone}
+        />
+      )}
     </Modal>
   );
 }
 
 // Separate component, so all form state starts fresh every time the dialog opens
-function BookForm({ book, genres, onBusyChange, onSaved, onGone }) {
+function BookForm({ book, genres, endpoint, onBusyChange, onSaved, onGone }) {
   const [values, setValues] = useState({
     title: book?.title ?? "",
     author: book?.author ?? "",
@@ -82,8 +101,8 @@ function BookForm({ book, genres, onBusyChange, onSaved, onGone }) {
     setSending(true);
     onBusyChange(true);
     try {
-      if (book) await api.patch(`/api/books/${book.id}`, patch);
-      else await api.post("/api/books", payload);
+      if (book) await api.patch(`${endpoint}/${book.id}`, patch);
+      else await api.post(endpoint, payload);
     } catch (err) {
       // Failed: allow another try
       sendingRef.current = false;

@@ -5,7 +5,9 @@ import { createPortal } from "react-dom";
 import { useOutletContext } from "react-router-dom";
 
 export default function TopBarActions({ children }) {
-  const { actionsSlot } = useOutletContext();
-  // The slot element exists after the first render of AppLayout; until then nothing is shown
-  return actionsSlot ? createPortal(children, actionsSlot) : null;
+  const context = useOutletContext();
+  // Nothing is shown if there is no context (a guard did not pass it on) or the slot does not exist yet.
+  // The slot element exists after the first render of AppLayout.
+  const slot = context?.actionsSlot;
+  return slot ? createPortal(children, slot) : null;
 }

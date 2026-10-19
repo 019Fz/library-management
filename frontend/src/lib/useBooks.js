@@ -1,41 +1,43 @@
-// Data hooks for the books page.
+// Data hooks shared by the books, users and dashboard pages.
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import api, { getApiError } from "../api/client.js";
 
-// Loads one page of books for a query string. One request per change; the previous request is
-// cancelled, so a slow old answer can never replace a newer one.
+// Loads a list (or any GET) for a url plus a query string. One request per change; the previous
+// request is cancelled, so a slow old answer can never replace a newer one.
 //   retry()   = try again after an error (shows the skeleton again)
-//   refetch() = reload the same query after a change (add/edit/delete). The books already on
-//               screen stay visible meanwhile, so the card that opened a dialog is not removed.
-export function useBooks(queryString) {
+//   refetch() = reload the same query after a change (add/edit/delete). The data already on
+//               screen stays visible meanwhile, so the element that opened a dialog is not removed.
+// error is { message, details, status }; status (for example 403) comes from the response.
+export function useList(url, queryString) {
   const [attempt, setAttempt] = useState(0); // goes up on Retry
   const [reload, setReload] = useState(0); // goes up on refetch
-  const key = `${queryString}#${attempt}#${reload}`;
-  // The last finished request, the key it was for, and the query string it belonged to
-  const [result, setResult] = useState({ key: null, queryString: null, data: null, error: null });
+  const key = `${url}?${queryString}#${attempt}#${reload}`;
+  // The last finished request, the key it was for, and the url + query string it belonged to
+  const [result, setResult] = useState({ key: null, source: null, data: null, error: null });
+  const source = `${url}?${queryString}`;
 
   useEffect(() => {
     const controller = new AbortController();
 
     api
-      .get("/api/books", { params: new URLSearchParams(queryString), signal: controller.signal })
-      .then((res) => setResult({ key, queryString, data: res.data, error: null }))
+      .get(url, { params: new URLSearchParams(queryString), signal: controller.signal })
+      .then((res) => setResult({ key, source, data: res.data, error: null }))
       .catch((err) => {
         if (axios.isCancel(err)) return; // we cancelled it ourselves
-        setResult({ key, queryString, data: null, error: getApiError(err) });
+        setResult({ key, source, data: null, error: { ...getApiError(err), status: err.response?.status } });
       });
 
     return () => controller.abort();
-  }, [key, queryString]);
+  }, [key, url, queryString, source]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   const refetch = useCallback(() => setReload((n) => n + 1), []);
 
   // Results of an older query are ignored: until the current one finishes we are "loading".
-  // Exception: a reload of the same query keeps showing the books we already have.
+  // Exception: a reload of the same query keeps showing the data we already have.
   const finished = result.key === key;
-  const keepOld = !finished && result.data !== null && result.queryString === queryString;
+  const keepOld = !finished && result.data !== null && result.source === source;
   const shown = finished || keepOld;
   return {
     loading: !shown,
@@ -46,8 +48,13 @@ export function useBooks(queryString) {
   };
 }
 
-// Loads the caller's genres (for the filter list and the form suggestions)
-export function useGenres() {
+// One page of the caller's books
+export function useBooks(queryString) {
+  return useList("/api/books", queryString);
+}
+
+// Loads genres (for the filter list and the form suggestions). The url decides whose genres.
+export function useGenres(url = "/api/books/genres") {
   const [state, setState] = useState({ genres: null, failed: false });
   const [reload, setReload] = useState(0);
 
@@ -55,7 +62,7 @@ export function useGenres() {
     const controller = new AbortController();
 
     api
-      .get("/api/books/genres", { signal: controller.signal })
+      .get(url, { signal: controller.signal })
       .then((res) => setState({ genres: res.data.genres, failed: false }))
       .catch((err) => {
         // A failed reload keeps the list we already have
@@ -63,7 +70,7 @@ export function useGenres() {
       });
 
     return () => controller.abort();
-  }, [reload]);
+  }, [url, reload]);
 
   const refetch = useCallback(() => setReload((n) => n + 1), []);
 

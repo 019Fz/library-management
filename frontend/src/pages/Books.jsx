@@ -1,15 +1,18 @@
 // The books page: search, filters, sort, a grid of books and pagination, plus add, edit and delete.
 // All filters live in the URL (see lib/bookQuery.js).
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import api from "../api/client.js";
 import { usePageTitle } from "../lib/usePageTitle.js";
 import { useBookQuery, PAGE_SIZE } from "../lib/bookQuery.js";
 import { useBooks, useGenres } from "../lib/useBooks.js";
+import { usePageGuard } from "../lib/usePageGuard.js";
+import { useDialogState } from "../lib/useDialogState.js";
 import TopBarActions from "../layouts/TopBarActions.jsx";
 import SearchBox from "../components/books/SearchBox.jsx";
 import FilterPanel from "../components/books/FilterPanel.jsx";
 import SortSelect from "../components/books/SortSelect.jsx";
 import Pagination from "../components/books/Pagination.jsx";
-import BookCard, { BookCardSkeleton } from "../components/books/BookCard.jsx";
+import BookCard, { BookCardSkeleton, BOOK_GRID as GRID } from "../components/books/BookCard.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import ErrorBox from "../components/ui/ErrorBox.jsx";
@@ -19,8 +22,6 @@ import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/toast-context.js";
 import BookFormDialog from "../components/books/BookFormDialog.jsx";
 
-const GRID = "grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4";
-
 export default function Books() {
   usePageTitle("Books");
   const { filters, queryString, update, clearFilters } = useBookQuery();
@@ -29,24 +30,7 @@ export default function Books() {
   const toast = useToast();
 
   // Which dialog is open: null, { type: "add" }, { type: "edit", book } or { type: "delete", book }
-  const [dialog, setDialog] = useState(null);
-  const headingRef = useRef(null); // focus goes here when the card that opened a dialog is gone
-  const triggerRef = useRef(null); // the button that opened the dialog
-  const focusHeadingRef = useRef(false);
-
-  function openDialog(next, trigger) {
-    triggerRef.current = trigger ?? null;
-    focusHeadingRef.current = false;
-    setDialog(next);
-  }
-
-  // onClose can fire more than once, so it only resets the state (toasts and reloads happen in the handlers below)
-  const closeDialog = useCallback(() => setDialog(null), []);
-
-  // After closing, focus returns to the trigger button, or to the heading if the book is gone
-  function getReturnFocus() {
-    return focusHeadingRef.current ? headingRef.current : triggerRef.current;
-  }
+  const { dialog, open: openDialog, close: closeDialog, closeToHeading, getReturnFocus, headingRef } = useDialogState();
 
   // Reload the current page (filters stay in the URL) and the genre list
   function reload() {
@@ -55,23 +39,21 @@ export default function Books() {
   }
 
   function handleSaved(kind) {
-    setDialog(null);
+    closeDialog();
     if (kind === "unchanged") return; // nothing was sent
     reload();
     toast.success(kind === "added" ? "Book added" : "Book updated");
   }
 
   function handleDeleted() {
-    focusHeadingRef.current = true; // the card will disappear after the reload
-    setDialog(null);
+    closeToHeading(); // the card will disappear after the reload
     reload();
     toast.success("Book deleted");
   }
 
   // 404: the book was removed elsewhere
   function handleGone() {
-    focusHeadingRef.current = true;
-    setDialog(null);
+    closeToHeading();
     reload();
     toast.error("That book no longer exists. The list was refreshed.");
   }
@@ -79,14 +61,15 @@ export default function Books() {
   // Typing in the search box replaces the history entry, so Back does not step through every search
   const handleSearch = useCallback((text) => update({ q: text }, { replace: true }), [update]);
 
-  // A page past the last one (for example ?page=99): move to the last page.
-  // This only happens for a finished request of the current query, and only to a SMALLER page
-  // number, so it cannot loop (page 1 never triggers it).
-  const lastPage = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
-  const outOfRange = Boolean(data) && data.total > 0 && data.books.length === 0 && lastPage < filters.page;
-  useEffect(() => {
-    if (outOfRange) update({ page: lastPage }, { replace: true });
-  }, [outOfRange, lastPage, update]);
+  // A page past the last one (for example ?page=99) moves to the last page
+  const outOfRange = usePageGuard({
+    total: data ? data.total : null,
+    shown: data ? data.books.length : 0,
+    page: filters.page,
+    pageSize: PAGE_SIZE,
+    update,
+  });
+  const deleting = dialog?.type === "delete" ? dialog.book : null;
 
   const hasFilters = Boolean(filters.q.trim() || filters.genre || filters.status);
   const showSkeleton = loading || outOfRange;
@@ -207,10 +190,13 @@ export default function Books() {
         getReturnFocus={getReturnFocus}
       />
       <ConfirmDialog
-        book={dialog?.type === "delete" ? dialog.book : null}
-        onClose={closeDialog}
-        onDeleted={handleDeleted}
+        target={deleting}
+        title={deleting ? `Delete ${deleting.title}?` : ""}
+        text="This cannot be undone."
+        request={(book) => api.delete(`/api/books/${book.id}`)}
+        onDone={handleDeleted}
         onGone={handleGone}
+        onClose={closeDialog}
         getReturnFocus={getReturnFocus}
       />
 
