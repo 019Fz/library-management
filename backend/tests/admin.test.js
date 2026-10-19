@@ -10,7 +10,7 @@ import jwt from "jsonwebtoken";
 import app from "../src/app.js";
 import prisma from "../src/lib/prisma.js";
 import { JWT_SECRET } from "../src/config.js";
-import { toMoney, statusCounts, topGenresFrom } from "../src/controllers/admin.controller.js";
+import { toMoney, statusCounts, topGenresFrom } from "../src/lib/bookHelpers.js";
 
 // Unique per run. The password is random for every run, never a fixed string.
 const runId = Date.now();

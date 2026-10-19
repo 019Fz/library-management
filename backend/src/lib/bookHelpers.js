@@ -35,6 +35,40 @@ export function buildBookFilter(query) {
   return where;
 }
 
+// Prisma sums are Decimals (or null when there are no rows) -> number with 2 decimals
+export function toMoney(sum) {
+  return sum ? Number(sum.toFixed(2)) : 0;
+}
+
+// groupBy rows -> { reading, completed, "to-read" }, with 0 for a status that has no books
+export function statusCounts(rows) {
+  const counts = { reading: 0, completed: 0, "to-read": 0 };
+  for (const row of rows) counts[fromDbStatus(row.status)] = row._count._all;
+  return counts;
+}
+
+// groupBy rows (one per exact spelling of `field`) -> [{ [field]: name, count }] biggest first,
+// with spellings that differ only by case counted together (Sci-Fi and sci-fi).
+// The capitalised spelling is kept (code-point order puts it first, as in dedupeGenres).
+export function topCounts(rows, field, limit = 5) {
+  const sorted = [...rows].sort((a, b) => (a[field] < b[field] ? -1 : a[field] > b[field] ? 1 : 0));
+  const byLowercase = new Map();
+  for (const row of sorted) {
+    const key = row[field].toLowerCase();
+    const entry = byLowercase.get(key);
+    if (entry) entry.count += row._count._all;
+    else byLowercase.set(key, { [field]: row[field], count: row._count._all });
+  }
+  return [...byLowercase.values()]
+    .sort((a, b) => b.count - a.count || a[field].localeCompare(b[field], undefined, { sensitivity: "base" }))
+    .slice(0, limit);
+}
+
+// The same for genres
+export function topGenresFrom(rows, limit = 5) {
+  return topCounts(rows, "genre", limit);
+}
+
 // Rows like { genre } -> genre names where spellings that differ only by case are collapsed, sorted A-Z
 export function dedupeGenres(rows) {
   // Code-point order puts "Sci-Fi" before "sci-fi", so the capitalised spelling is the one kept

@@ -1,8 +1,17 @@
 // Admin API: stats, user management and book management across all users.
 // The router already ran authenticate + requireAdmin, so every handler here is admin-only.
 import prisma from "../lib/prisma.js";
-import { fromDbStatus, toDbStatus } from "../lib/bookStatus.js";
-import { bookView, parse, isRecordNotFound, buildBookFilter, dedupeGenres } from "../lib/bookHelpers.js";
+import { toDbStatus } from "../lib/bookStatus.js";
+import {
+  bookView,
+  parse,
+  isRecordNotFound,
+  buildBookFilter,
+  dedupeGenres,
+  toMoney,
+  statusCounts,
+  topGenresFrom,
+} from "../lib/bookHelpers.js";
 import { updateBookSchema, idParamSchema } from "../validation/book.schemas.js";
 import {
   userListQuerySchema,
@@ -36,34 +45,6 @@ function adminBookView({ user, ...book }) {
 
 const userNotFound = (res) => res.status(404).json({ error: "User not found" });
 const bookNotFound = (res) => res.status(404).json({ error: "Book not found" });
-
-// Prisma sums are Decimals (or null when there are no rows) -> number with 2 decimals
-export function toMoney(sum) {
-  return sum ? Number(sum.toFixed(2)) : 0;
-}
-
-// groupBy rows -> { reading, completed, "to-read" }, with 0 for a status that has no books
-export function statusCounts(rows) {
-  const counts = { reading: 0, completed: 0, "to-read": 0 };
-  for (const row of rows) counts[fromDbStatus(row.status)] = row._count._all;
-  return counts;
-}
-
-// groupBy rows (one per exact spelling) -> top genres with Sci-Fi and sci-fi counted together.
-// The capitalised spelling is kept (code-point order puts it first, as in dedupeGenres).
-export function topGenresFrom(rows, limit = 5) {
-  const sorted = [...rows].sort((a, b) => (a.genre < b.genre ? -1 : a.genre > b.genre ? 1 : 0));
-  const byLowercase = new Map();
-  for (const row of sorted) {
-    const key = row.genre.toLowerCase();
-    const entry = byLowercase.get(key);
-    if (entry) entry.count += row._count._all;
-    else byLowercase.set(key, { genre: row.genre, count: row._count._all });
-  }
-  return [...byLowercase.values()]
-    .sort((a, b) => b.count - a.count || a.genre.localeCompare(b.genre, undefined, { sensitivity: "base" }))
-    .slice(0, limit);
-}
 
 // ---------- stats ----------
 
