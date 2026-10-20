@@ -1,5 +1,6 @@
 // One dialog for adding and editing a book.
 //   open     = show the dialog; book = the book to edit, or null to add a new one
+//   initialValues = optional { title, author, genre, price, status } to prefill an ADD (ignored when editing)
 //   genres   = the user's genres (suggestions for the genre field), or null
 //   onClose  = only resets the dialog state (it can be called more than once)
 //   onSaved  = called with "added", "updated" or "unchanged" after success
@@ -21,6 +22,7 @@ const FIELD_ORDER = ["title", "author", "genre", "price"];
 export default function BookFormDialog({
   open,
   book,
+  initialValues,
   genres,
   onClose,
   onSaved,
@@ -42,6 +44,7 @@ export default function BookFormDialog({
       {open && (
         <BookForm
           book={book}
+          initialValues={initialValues}
           genres={genres}
           endpoint={endpoint}
           onBusyChange={setBusy}
@@ -54,13 +57,16 @@ export default function BookFormDialog({
 }
 
 // Separate component, so all form state starts fresh every time the dialog opens
-function BookForm({ book, genres, endpoint, onBusyChange, onSaved, onGone }) {
+function BookForm({ book, initialValues, genres, endpoint, onBusyChange, onSaved, onGone }) {
+  // Edit: the book's values. Add: empty, or the optional initialValues (for example a recommended book).
+  // initialValues is ignored when editing.
+  const seed = book ? null : initialValues;
   const [values, setValues] = useState({
-    title: book?.title ?? "",
-    author: book?.author ?? "",
-    genre: book?.genre ?? "",
-    price: book ? Number(book.price).toFixed(2) : "",
-    status: book?.status ?? "to-read",
+    title: book?.title ?? seed?.title ?? "",
+    author: book?.author ?? seed?.author ?? "",
+    genre: book?.genre ?? seed?.genre ?? "",
+    price: book ? Number(book.price).toFixed(2) : seed?.price != null ? Number(seed.price).toFixed(2) : "",
+    status: book?.status ?? seed?.status ?? "to-read",
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState(null); // message + details from the backend

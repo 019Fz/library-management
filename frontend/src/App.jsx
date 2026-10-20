@@ -12,6 +12,7 @@ import Books from './pages/Books.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Users from './pages/Users.jsx'
 import AdminBooks from './pages/AdminBooks.jsx'
+import Insights from './pages/Insights.jsx'
 import NotFound from './pages/NotFound.jsx'
 
 export default function App() {
@@ -30,6 +31,8 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/books" element={<Books />} />
+          {/* Every role: users see their own insights, admins get a Platform / A user switch */}
+          <Route path="/insights" element={<Insights />} />
 
           {/* Admin only */}
           <Route element={<AdminRoute />}>

@@ -4,4 +4,5 @@ export const NAV_LINKS = [
   { to: "/books", label: "Books", icon: "book", roles: ["user", "admin"] },
   { to: "/admin/books", label: "All books", icon: "library", roles: ["admin"] },
   { to: "/users", label: "Users", icon: "users", roles: ["admin"] },
+  { to: "/insights", label: "Insights", icon: "insights", roles: ["user", "admin"] },
 ];

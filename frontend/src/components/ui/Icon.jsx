@@ -83,7 +83,16 @@ const ICONS = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
-  expand: <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />,
+  insights: (
+    <>
+      <path d="M4 20V4" />
+      <path d="M4 20h16" />
+      <rect x="7.5" y="12" width="3" height="5" rx="0.75" />
+      <rect x="12.5" y="8" width="3" height="9" rx="0.75" />
+      <rect x="17.5" y="5" width="3" height="12" rx="0.75" />
+    </>
+  ),
+  expand:<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />,
   collapse: <path d="M20 10h-6V4M4 14h6v6M14 10l7-7M3 21l7-7" />,
   send: <path d="M21 3L10 14M21 3l-7 18-4-7-7-4z" />,
   check: (
