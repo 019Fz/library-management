@@ -20,6 +20,12 @@ export function formatDate(value) {
   return dateFormat.format(new Date(value));
 }
 
+// A day key from the API ("2026-10-07", a UTC day) as "Oct 7". Read and written in UTC so the day never shifts.
+const dayFormat = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+export function formatShortDay(key) {
+  return dayFormat.format(new Date(`${key}T00:00:00Z`));
+}
+
 // Status names used by the API -> label shown to people
 export const STATUS_LABELS = {
   reading: "Reading",
