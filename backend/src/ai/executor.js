@@ -5,6 +5,7 @@
 import prisma from "../lib/prisma.js";
 import { buildBookFilter, statusCounts, topCounts, toMoney } from "../lib/bookHelpers.js";
 import { fromDbStatus } from "../lib/bookStatus.js";
+import { popularTitles } from "../lib/insightQueries.js";
 import { isAdminOnly } from "./intents.js";
 
 // Which books may this caller see? Returns the Prisma "where" part and whether owner names are shown.
@@ -146,13 +147,8 @@ const handlers = {
   // One fixed query (a tagged template, so the limit is a bound value). It is raw SQL only because
   // "distinct users per case-insensitive title" cannot be written with groupBy.
   async popular_books(params) {
-    const rows = await prisma.$queryRaw`
-      SELECT min(title COLLATE "C") AS title, count(DISTINCT "userId")::int AS owners
-      FROM books
-      GROUP BY lower(title)
-      ORDER BY owners DESC, lower(title) ASC
-      LIMIT ${params.limit}::int`;
-    return { books: rows.map((row) => ({ title: row.title, owners: Number(row.owners) })) };
+    // The query lives in lib/insightQueries.js (the admin insights use it too)
+    return { books: await popularTitles(params.limit) };
   },
 
   async count_users() {

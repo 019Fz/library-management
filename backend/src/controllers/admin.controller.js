@@ -12,6 +12,7 @@ import {
   statusCounts,
   topGenresFrom,
 } from "../lib/bookHelpers.js";
+import { dayKey, lastDays, fillDays } from "../lib/insightHelpers.js";
 import { updateBookSchema, idParamSchema } from "../validation/book.schemas.js";
 import {
   userListQuerySchema,
@@ -48,9 +49,35 @@ const bookNotFound = (res) => res.status(404).json({ error: "Book not found" });
 
 // ---------- stats ----------
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const CHART_DAYS = 14;
+
 export async function getStats(req, res) {
+  const now = Date.now();
+  const since7d = new Date(now - 7 * DAY_MS);
+  const since48h = new Date(now - 2 * DAY_MS);
+  // The chart shows the last 14 calendar days (UTC), today included. The start goes to SQL as an ISO text
+  // cast to "timestamp", so the server's time zone cannot shift it.
+  const today = dayKey(new Date(now));
+  const chartStart = `${lastDays(today, CHART_DAYS)[0]}T00:00:00.000Z`;
+
   // Database aggregation only; one transaction so the numbers fit together
-  const [users, admins, books, value, byStatus, byGenre, recentUsers, adminList] = await prisma.$transaction([
+  const [
+    users,
+    admins,
+    books,
+    value,
+    byStatus,
+    byGenre,
+    recentUsers,
+    adminList,
+    newUsers7d,
+    newBooks7d,
+    perDay,
+    recentBooks,
+    usersWithoutBooks,
+    newUsersLast48h,
+  ] = await prisma.$transaction([
     prisma.user.count(),
     prisma.user.count({ where: { role: "admin" } }),
     prisma.book.count(),
@@ -63,6 +90,28 @@ export async function getStats(req, res) {
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: { id: true, name: true, email: true, createdAt: true },
     }),
+    prisma.user.count({ where: { createdAt: { gte: since7d } } }),
+    prisma.book.count({ where: { createdAt: { gte: since7d } } }),
+    // Books created per calendar day (the only grouping by day: a fixed query with one parameter)
+    prisma.$queryRaw`
+      SELECT "createdAt"::date::text AS day, count(*)::int AS count
+      FROM books
+      WHERE "createdAt" >= ${chartStart}::timestamp
+      GROUP BY 1`,
+    prisma.book.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        author: true,
+        genre: true,
+        createdAt: true,
+        user: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.user.count({ where: { books: { none: {} } } }),
+    prisma.user.count({ where: { createdAt: { gte: since48h } } }),
   ]);
 
   res.json({
@@ -72,6 +121,11 @@ export async function getStats(req, res) {
     topGenres: topGenresFrom(byGenre),
     recentUsers: recentUsers.map(userView),
     admins: adminList,
+    newUsers7d,
+    newBooks7d,
+    booksPerDay: fillDays(perDay, CHART_DAYS, today),
+    recentBooks: recentBooks.map(({ user, ...book }) => ({ ...book, owner: user })),
+    attention: { usersWithoutBooks, newUsersLast48h },
   });
 }
 

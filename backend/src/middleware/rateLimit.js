@@ -33,3 +33,29 @@ export function createRateLimiter({ limit, windowMs, now = Date.now }) {
 }
 
 export const aiRateLimit = createRateLimiter(AI_RATE_LIMIT);
+
+// A stricter limit for calls to the LLM (they cost money or time), in one place.
+export const LLM_RATE_LIMIT = { limit: 10, windowMs: 60 * 1000 };
+
+// Counts events per key in a time window: hit(key) is true while the key is under the limit.
+// (Separate from the request limiter above, which answers 429 itself.)
+export function createWindowCounter({ limit, windowMs, now = Date.now }) {
+  const windows = new Map(); // key -> { count, resetAt }
+
+  return function hit(key) {
+    const time = now();
+    if (windows.size > 1000) {
+      for (const [id, entry] of windows) if (entry.resetAt <= time) windows.delete(id);
+    }
+    let entry = windows.get(key);
+    if (!entry || entry.resetAt <= time) {
+      entry = { count: 0, resetAt: time + windowMs };
+      windows.set(key, entry);
+    }
+    entry.count += 1;
+    return entry.count <= limit;
+  };
+}
+
+// True if this user may make another LLM call right now (and counts it)
+export const llmAllowed = createWindowCounter(LLM_RATE_LIMIT);

@@ -11,6 +11,7 @@ import {
   updateAdminBook,
   deleteAdminBook,
 } from "../controllers/admin.controller.js";
+import { getAdminInsights, getUserInsights } from "../controllers/adminInsights.controller.js";
 import { authenticate, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
@@ -18,8 +19,10 @@ const router = Router();
 router.use(authenticate, requireAdmin);
 
 router.get("/stats", getStats);
+router.get("/insights", getAdminInsights);
 
 router.get("/users", listUsers);
+router.get("/users/:id/insights", getUserInsights);
 router.patch("/users/:id", updateUserRole);
 router.delete("/users/:id", deleteUser);
 

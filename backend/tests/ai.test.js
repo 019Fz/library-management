@@ -60,7 +60,12 @@ let alice, bea, admin, admin2;
 const popTitle = `PopX${runId} Title`;
 const popGenre = `Pg${runId}`;
 
+// These tests are about the rules. Switch the optional LLM off (even if backend/.env enables it) so they never reach a network.
+const savedLlmEnv = {};
+for (const key of Object.keys(process.env)) if (key.startsWith("AI_LLM_")) savedLlmEnv[key] = process.env[key];
+
 beforeAll(async () => {
+  for (const key of Object.keys(savedLlmEnv)) delete process.env[key];
   // Remove leftovers of earlier crashed runs, then create this run's users and data
   await prisma.user.deleteMany({ where: { email: { startsWith: EMAIL_PREFIX } } });
   alice = await newUser("Alice");
@@ -95,6 +100,7 @@ beforeAll(async () => {
 
 // Deleting the users also deletes their books (cascade)
 afterAll(async () => {
+  Object.assign(process.env, savedLlmEnv);
   await prisma.user.deleteMany({ where: { email: { in: createdEmails } } });
   await prisma.$disconnect();
 });
