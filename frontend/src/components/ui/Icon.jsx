@@ -83,6 +83,9 @@ const ICONS = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  expand: <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />,
+  collapse: <path d="M20 10h-6V4M4 14h6v6M14 10l7-7M3 21l7-7" />,
+  send: <path d="M21 3L10 14M21 3l-7 18-4-7-7-4z" />,
   check: (
     <>
       <circle cx="12" cy="12" r="9" />

@@ -4,6 +4,8 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar.jsx";
 import TopBar from "../components/TopBar.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
+import AssistantWidget from "../components/assistant/AssistantWidget.jsx";
+import { AssistantProvider } from "../context/AssistantProvider.jsx";
 
 export default function AppLayout() {
   // Only the path (not the ?search part) is used as the boundary's key: moving to another page clears a
@@ -56,6 +58,10 @@ export default function AppLayout() {
           </ErrorBoundary>
         </main>
       </div>
+      {/* Mounted once here, so the conversation survives page changes and ends on logout */}
+      <AssistantProvider>
+        <AssistantWidget hidden={menuOpen} />
+      </AssistantProvider>
     </div>
   );
 }

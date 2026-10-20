@@ -65,8 +65,9 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={api}>
       {children}
       {/* Both live regions always exist, so screen readers announce what is added to them.
-          Phones: full width at the bottom. From "sm": bottom right. */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-stretch gap-2 p-4 sm:left-auto sm:w-96">
+          Phones: full width at the top (the assistant sheet and launcher use the bottom).
+          From "sm": bottom right, above the assistant launcher. */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-stretch gap-2 p-4 sm:top-auto sm:bottom-20 sm:left-auto sm:w-96">
         <div aria-live="polite" className="flex flex-col gap-2">
           {toasts
             .filter((item) => item.kind === "success")
