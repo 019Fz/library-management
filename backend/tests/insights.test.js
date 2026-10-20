@@ -18,6 +18,8 @@ import {
   summarySentence,
   adminSentences,
   recommendationReason,
+  formatMoneyText,
+  CURRENCY_SYMBOL,
   dayKey,
 } from "../src/lib/insightHelpers.js";
 
@@ -167,7 +169,7 @@ describe("insight helpers", () => {
     );
     expect(summarySentence("this user", { totalBooks: 0 })).toBe("This user has no books yet.");
     expect(summarySentence("you", { totalBooks: 1, totalValue: 9.5, completionRate: 100, topGenres: [{ genre: "Fantasy" }] })).toBe(
-      "You own 1 book with a total value of 9.50. 100% are completed, and Fantasy is your top genre.",
+      "You own 1 book with a total value of 9.50 $. 100% are completed, and Fantasy is your top genre.",
     );
 
     expect(
@@ -182,7 +184,7 @@ describe("insight helpers", () => {
       }),
     ).toEqual([
       "Readers have completed 40% of the books on the platform.",
-      "Fantasy is the most common genre (50% of all books), and Sci-Fi has the highest average price among the top genres (24.30).",
+      "Fantasy is the most common genre (50% of all books), and Sci-Fi has the highest average price among the top genres (24.30 $).",
       "Users own 5 books on average, and 1 user has no books yet.",
     ]);
     expect(adminSentences({ totalBooks: 0, totalUsers: 0, usersWithoutBooks: 0 })).toEqual([
@@ -190,6 +192,40 @@ describe("insight helpers", () => {
       "There are no genres to compare yet.",
       "There are no users yet.",
     ]);
+  });
+
+  it("formats money for sentences with the sign after the number", () => {
+    expect(formatMoneyText(364.48)).toBe("364.48 $");
+    expect(formatMoneyText(9.5)).toBe("9.50 $");
+    expect(formatMoneyText(0)).toBe("0.00 $");
+    expect(formatMoneyText("12.3")).toBe("12.30 $");
+    expect(formatMoneyText(1).endsWith(` ${CURRENCY_SYMBOL}`)).toBe(true);
+  });
+
+  it("puts the sign after every money value in the sentences, and none where there is no money", () => {
+    const mine = summarySentence("you", { totalBooks: 26, totalValue: 364.48, completionRate: 58, topGenres: [] });
+    expect(mine).toContain("364.48 $");
+    expect(mine).not.toMatch(/\$\d/); // never before the number
+    expect(summarySentence("this user", { totalBooks: 2, totalValue: 20, completionRate: 50, topGenres: [] })).toContain("20.00 $.");
+
+    const admin = adminSentences({
+      totalBooks: 10,
+      completionRate: 40,
+      topGenre: { genre: "Fantasy", count: 5 },
+      priciestGenre: { genre: "Sci-Fi", averagePrice: 24.3 },
+      averageBooksPerUser: 5,
+      totalUsers: 2,
+      usersWithoutBooks: 1,
+    });
+    expect(admin[1]).toContain("(24.30 $)");
+    // Sentences without money get no sign
+    expect(admin[0]).not.toContain("$");
+    expect(admin[2]).not.toContain("$");
+    expect(summarySentence("you", { totalBooks: 0 })).not.toContain("$");
+    expect(summarySentence("this user", { totalBooks: 0 })).not.toContain("$");
+    for (const sentence of adminSentences({ totalBooks: 0, totalUsers: 0, usersWithoutBooks: 0 })) {
+      expect(sentence).not.toContain("$");
+    }
   });
 
   it("builds the recommendation reason", () => {
@@ -241,7 +277,7 @@ describe("GET /api/insights/me", () => {
       { genre: fa, count: 4 }, // Fa and fa merged, capitalised spelling kept
       { genre: sc, count: 1 },
     ]);
-    expect(body.summary).toBe(`You own 5 books with a total value of 125.49. 40% are completed, and ${fa} is your top genre.`);
+    expect(body.summary).toBe(`You own 5 books with a total value of 125.49 $. 40% are completed, and ${fa} is your top genre.`);
 
     // And the same from the database
     const agg = await prisma.book.aggregate({ where: { userId: alice.id }, _count: { _all: true }, _sum: { price: true }, _max: { price: true } });

@@ -57,6 +57,15 @@ export function mergeGenres(rows) {
   );
 }
 
+// The currency sign printed in the sentences. Keep it in step with CURRENCY ("USD") in frontend/src/lib/format.js:
+// change both together. The API's number fields never carry a sign; only the sentence text does.
+export const CURRENCY_SYMBOL = "$";
+
+// A money amount for a sentence: two decimals, then the sign after a space ("364.48 $")
+export function formatMoneyText(amount) {
+  return `${Number(amount).toFixed(2)} ${CURRENCY_SYMBOL}`;
+}
+
 const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
 // ---------- sentences ----------
@@ -72,7 +81,7 @@ export function summarySentence(subject, { totalBooks, totalValue, completionRat
   const owner = me ? "You own" : "This user owns";
   const their = me ? "your" : "their";
   const top = topGenres[0] ? `, and ${topGenres[0].genre} is ${their} top genre` : "";
-  return `${owner} ${plural(totalBooks, "book")} with a total value of ${totalValue.toFixed(2)}. ${completionRate}% are completed${top}.`;
+  return `${owner} ${plural(totalBooks, "book")} with a total value of ${formatMoneyText(totalValue)}. ${completionRate}% are completed${top}.`;
 }
 
 // Exactly three sentences about the whole platform
@@ -87,7 +96,7 @@ export function adminSentences({ totalBooks, completionRate, topGenre, priciestG
     second = `${topGenre.genre} is the most common genre (${percent(topGenre.count, totalBooks)}% of all books)`;
     second +=
       priciestGenre && priciestGenre.genre !== topGenre.genre
-        ? `, and ${priciestGenre.genre} has the highest average price among the top genres (${priciestGenre.averagePrice.toFixed(2)}).`
+        ? `, and ${priciestGenre.genre} has the highest average price among the top genres (${formatMoneyText(priciestGenre.averagePrice)}).`
         : ".";
   }
 
