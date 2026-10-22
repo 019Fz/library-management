@@ -1,4 +1,5 @@
 // Integration tests for /api/auth. They use the real database (the Postgres container must be running).
+import crypto from "node:crypto";
 import { describe, it, expect, afterAll } from "vitest";
 import request from "supertest";
 import app from "../src/app.js";
@@ -14,7 +15,8 @@ function newEmail() {
   return email;
 }
 
-const PASSWORD = "password123";
+// A new random password for every run, never a fixed string (32 characters, inside the 8 to 72 limit)
+const PASSWORD = crypto.randomBytes(16).toString("hex");
 
 // Helper: register a user and return the response body
 async function registerUser(email) {

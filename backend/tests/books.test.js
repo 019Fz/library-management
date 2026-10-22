@@ -1,5 +1,6 @@
 // Integration tests for /api/books. They use the real database (the Postgres container must be running).
 // Every test user is new, so the seeded admin and its books are never touched.
+import crypto from "node:crypto";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import app from "../src/app.js";
@@ -9,6 +10,8 @@ import prisma from "../src/lib/prisma.js";
 const runId = Date.now();
 const createdEmails = [];
 let counter = 0;
+// A new random password for every run, never a fixed string
+const password = crypto.randomBytes(16).toString("hex");
 
 // Helper: register a fresh user and return { id, token }
 async function newUser() {
@@ -16,7 +19,7 @@ async function newUser() {
   createdEmails.push(email);
   const res = await request(app)
     .post("/api/auth/register")
-    .send({ name: "Book Tester", email, password: "password123" });
+    .send({ name: "Book Tester", email, password });
   return { id: res.body.user.id, token: res.body.token };
 }
 
