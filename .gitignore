@@ -1,27 +1,30 @@
+# The one .gitignore of the project (backend and frontend are covered from here).
+
 # Dependencies
 node_modules/
 
-# Environment files (never commit secrets)
+# Environment files (never commit secrets). This also covers .env.example and .env.local
 .env
 .env.*
-
-
 
 # Build output
 dist/
 build/
 
-# Generated Prisma client
+# Generated Prisma client (created by "prisma generate" and inside the Docker build)
 backend/src/generated/
 
-# Logs and OS files
+# Logs
+logs/
 *.log
 npm-debug.log*
+
+# Local-only files
+*.local
+
+# OS and editor files
 .DS_Store
 Thumbs.db
-
-# Editor
 .vscode/
 .idea/
-
-
+*.sw?
