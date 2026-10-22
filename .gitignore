@@ -3,9 +3,10 @@
 # Dependencies
 node_modules/
 
-# Environment files (never commit secrets). This also covers .env.example and .env.local
+# Environment files (never commit secrets). .env.example is allowed: placeholders only
 .env
 .env.*
+!.env.example
 
 # Build output
 dist/
