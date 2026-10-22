@@ -6,5 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   // tailwindcss() enables Tailwind v4 (no separate config file needed)
   plugins: [react(), tailwindcss()],
+  // Read the one .env in the repository root. Only variables starting with VITE_ reach the browser.
+  envDir: '..',
   server: { port: 5173 },
 })

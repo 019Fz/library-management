@@ -6,7 +6,7 @@ async function main() {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
   if (!email || !password) {
-    throw new Error("Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in backend/.env");
+    throw new Error("Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in the root .env");
   }
 
   // upsert = create if missing, otherwise leave the existing admin as is

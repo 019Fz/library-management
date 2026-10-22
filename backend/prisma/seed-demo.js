@@ -1,6 +1,6 @@
 // Optional demo data: 3 demo users and 46 books. Safe to run many times.
 // Mia has 26 books, enough for 3 pages of 12 in the books list.
-// Run with: npm run seed:demo   (needs DEMO_USER_PASSWORD in backend/.env)
+// Run with: npm run seed:demo   (needs DEMO_USER_PASSWORD in the root .env)
 import bcrypt from "bcryptjs";
 import prisma from "../src/lib/prisma.js";
 import { toDbStatus } from "../src/lib/bookStatus.js";
@@ -84,7 +84,7 @@ async function main() {
   // The password is never stored in the code; it must come from the environment
   const password = process.env.DEMO_USER_PASSWORD;
   if (!password || password.length < 8 || password.length > 72) {
-    throw new Error("Set DEMO_USER_PASSWORD in backend/.env (8 to 72 characters). See .env.example.");
+    throw new Error("Set DEMO_USER_PASSWORD in the root .env (8 to 72 characters). See .env.example.");
   }
   for (const demo of DEMO_USERS) {
     if (!demo.email.endsWith(DEMO_EMAIL_SUFFIX)) {

@@ -1,5 +1,5 @@
 // Shared Prisma client. Prisma 7 needs a driver adapter to talk to Postgres.
-import "dotenv/config";
+import "../loadEnv.js"; // the root .env
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.ts";
 

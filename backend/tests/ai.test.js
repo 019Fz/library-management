@@ -60,7 +60,7 @@ let alice, bea, admin, admin2;
 const popTitle = `PopX${runId} Title`;
 const popGenre = `Pg${runId}`;
 
-// These tests are about the rules. Switch the optional LLM off (even if backend/.env enables it) so they never reach a network.
+// These tests are about the rules. Switch the optional LLM off (even if the root .env enables it) so they never reach a network.
 const savedLlmEnv = {};
 for (const key of Object.keys(process.env)) if (key.startsWith("AI_LLM_")) savedLlmEnv[key] = process.env[key];
 

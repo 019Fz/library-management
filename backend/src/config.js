@@ -1,8 +1,8 @@
 // Reads auth settings from the environment and fails fast if the secret is missing.
-import "dotenv/config";
+import "./loadEnv.js";
 
 if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET is missing. Set it in backend/.env (see .env.example).");
+  throw new Error("JWT_SECRET is missing. Set it in the root .env (see .env.example).");
 }
 
 export const JWT_SECRET = process.env.JWT_SECRET;

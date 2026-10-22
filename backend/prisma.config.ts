@@ -1,5 +1,5 @@
 // Prisma 7 config: tells the Prisma CLI where the schema, migrations and seed are.
-import "dotenv/config";
+import "./src/loadEnv.js"; // loads the root .env (and builds DATABASE_URL from POSTGRES_*)
 import { defineConfig, env } from "prisma/config";
 
 export default defineConfig({
