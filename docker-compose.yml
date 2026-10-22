@@ -1,25 +1,87 @@
-
 services:
   db:
     image: postgres:16
-    container_name: library_db
     restart: unless-stopped
-    # Credentials come from the root .env file
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    # Published on this computer only (127.0.0.1), not on the network. It stays reachable for
+    # tests, "prisma migrate dev" and psql run on the host.
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    # Named volume keeps data when the container is removed
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    # Named volume keeps the data when the container is removed
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # Reports "healthy" once Postgres accepts connections
+    # Reports "healthy" once Postgres accepts connections ($$ = the variable of the container, not of this file)
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  backend:
+    # One Dockerfile for both apps (docker/Dockerfile); the target picks the image. The context is the repo root.
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: backend
+    restart: unless-stopped
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 5000
+      # The database is reached by its service name "db" inside the compose network.
+      # POSTGRES_PASSWORD must use letters and digits only, because it becomes part of this URL.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      # The exact address the browser opens the frontend on
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:${FRONTEND_PORT:-5173}}
+      # Optional seeds, off by default and without default passwords (see docker/backend-start.js)
+      SEED: ${SEED:-false}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_DEMO: ${SEED_DEMO:-false}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
+      # Optional LLM translator: it stays disabled while the base URL or the model is empty
+      AI_LLM_BASE_URL: ${AI_LLM_BASE_URL:-}
+      AI_LLM_MODEL: ${AI_LLM_MODEL:-}
+      AI_LLM_API_KEY: ${AI_LLM_API_KEY:-}
+      AI_LLM_TIMEOUT_MS: ${AI_LLM_TIMEOUT_MS:-10000}
+    # Makes "host.docker.internal" work on Linux too (Docker Desktop already has it), for Ollama on the host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s # the migrations run before the server starts
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: frontend
+      args:
+        # Written into the JavaScript at build time: it must be an address the browser can reach
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:${BACKEND_PORT:-5000}}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-5173}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:

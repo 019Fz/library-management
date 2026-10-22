@@ -1,0 +1,18 @@
+# Rules for the Docker build context (the repository root). BuildKit reads this file because it sits
+# next to docker/Dockerfile. It is an allow-list: everything is excluded first, then only what the
+# images need is let back in, so .env files, CLAUDE.md, design/, docs/ and .claude/ can never enter an image.
+*
+!backend
+!frontend
+!docker/backend-start.js
+!docker/nginx.conf
+
+# Inside the allowed folders, still keep these out (the last matching rule wins)
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/*.log
+# The Prisma client is generated inside the image (a copy made on the host may be for another system)
+backend/src/generated
+backend/tests
