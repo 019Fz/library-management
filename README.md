@@ -1,139 +1,124 @@
 # Library Management System
 
-Users manage their personal books, an admin manages all users and books, and an AI Query Agent answers natural-language questions about the library data (built in a later phase). See `docs/SPEC.md` for the full spec.
+A web app where users manage their personal book library, an admin manages all users and books, and an AI assistant answers natural-language questions about the library data. The full task description is in [`docs/SPEC.md`](docs/SPEC.md).
 
-**Stack:** React + Vite + Tailwind CSS (frontend), Node.js + Express (backend), PostgreSQL + Prisma 7 (database), Docker.
+## Features
 
-## Ports
-| Service  | Port |
-|----------|------|
-| Backend  | 5000 |
-| Frontend | 5173 |
-| Postgres | 5432 |
+- **Accounts:** register and log in (JWT, bcrypt-hashed passwords). Two roles: `user` and `admin`.
+- **Books:** add, edit, delete, search, filter by genre and status, sort and paginate. Every user only ever sees their own books.
+- **Admin:** a dashboard (totals, books added per day, status split, newest users and books), a users page (change roles, delete users) and an all-books page. An admin cannot change the role of or delete their own account.
+- **AI Query Agent:** ask questions like "Who owns the most books?", "Which is the most popular book?" or "Show the five most expensive books". A floating chat widget on every page shows the answer as a table, a number or a message.
+- **Insights:** reading status, top genres and a "what stands out" summary, plus book recommendations a user can add with one click. Admins also get a platform view and a view of any single user.
+- **Tests:** Vitest and Supertest (backend), Vitest (frontend).
+- **Docker:** `docker compose up --build` starts the whole stack.
 
-## Prerequisites
-- Node.js 22+ (developed on 24)
-- Docker Desktop
+**Stack:** React, Vite, React Router, Axios, Tailwind CSS v4 | Node.js, Express 5, Zod | PostgreSQL 16, Prisma 7 | Docker, nginx.
 
-## Setup
+## Quick start (Docker)
 
-1. **Start Postgres:**
-   ```bash
-   docker compose up -d
-   docker compose ps        # wait until the db shows "healthy"
-   ```
+**1. Create a file named `.env` in the repository root** with these four lines:
 
-3. **Backend:**
-   ```bash
-   cd backend
-   npm install
-   npx prisma migrate dev   # create tables
-   npx prisma generate      # generate the Prisma client
-   npm run seed             # admin user + sample books (safe to re-run)
-   npm run dev              # http://localhost:5000/health
-   ```
+```
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+JWT_SECRET=
+```
 
-4. **Frontend** (in a second terminal):
-   ```bash
-   cd frontend
-   npm install
-   npm run dev              # http://localhost:5173
-   ```
+Generate a secret with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` (or any long random string). The database password must use letters and digits only, because it becomes part of the database URL.
 
-## Environment variables (backend/.env)
-| Variable | Meaning |
-|---|---|
-| `PORT` | API port (default 5000) |
-| `CORS_ORIGIN` | Allowed frontend origin |
-| `DATABASE_URL` | Postgres connection string (must match the root `.env`) |
-| `JWT_SECRET` | **Required.** Long random string used to sign tokens. The app will not start without it. |
-| `JWT_EXPIRES_IN` | Token lifetime (default `1d`) |
-| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Used only by the seed script |
+**2. Start everything:**
 
-Generate a secret with: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`
+```
+docker compose up --build
+```
 
-## Auth API
-Protected routes need the header `Authorization: Bearer <token>`.
+**3. Open the app:** <http://localhost:(your_port)> (the API health check is <http://localhost:(your_port)/health>). Register an account to start adding books.
 
-| Method | Path | Auth | Description |
+The first start takes a few minutes. The database tables are created automatically.
+
+### Create an admin account (optional)
+
+A fresh database has no admin, and registration only creates normal users. In a second terminal, choose your own admin email and password:
+
+```
+docker compose exec -e SEED_ADMIN_EMAIL=admin@example.com -e SEED_ADMIN_PASSWORD=your_password backend npm run seed
+```
+
+### Stop and reset
+
+```
+docker compose down       # stop; the database is kept
+docker compose down -v    # stop and DELETE the database
+```
+
+### Look inside the database
+
+```
+docker compose exec db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+Then `\dt` lists the tables and `\q` quits. The database port is published on `127.0.0.1:(Your_port)` only, so a desktop client can also connect with the values from your `.env`.
+
+## Environment variables
+
+All settings live in **one `.env` file in the repository root**. It is read by Docker Compose, by the backend when it runs on your computer, and by Vite (only `VITE_` variables reach the browser). It is never committed.
+
+| Variable | Required | Default | Meaning |
 |---|---|---|---|
-| POST | `/api/auth/register` | no | Body: `name`, `email`, `password` (8-72 chars). Always creates a `user` (any `role` in the body is ignored). Returns `201 { user, token }`. `409` if the email exists. |
-| POST | `/api/auth/login` | no | Body: `email`, `password`. Returns `200 { user, token }`. `401 "Invalid email or password"` for a wrong email or password. |
-| GET | `/api/auth/me` | yes | Returns `{ user }` for the token owner. `401` if the token is missing or invalid. |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | yes | | Database credentials (password: letters and digits only) |
+| `JWT_SECRET` | yes | | Key that signs login tokens. Keep it secret |
+| `JWT_EXPIRES_IN` | no | `1d` | How long a login stays valid |
+| `FRONTEND_PORT`, `BACKEND_PORT`, `POSTGRES_PORT` | no |  | Ports on your computer |
+| `VITE_API_URL` | no | `http://localhost:(your_backend_port)` | Address the browser uses for the API. Baked in at build time, so rebuild after changing it |
+| `CORS_ORIGIN` | no | `http://localhost:(your_frontend_port)` | Address the browser opens the app on |
+| `SEED`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_DEMO`, `DEMO_USER_PASSWORD` | no | off | Optional seeding at container start (see the commands above for the manual way) |
+| `AI_LLM_BASE_URL`, `AI_LLM_MODEL`, `AI_LLM_API_KEY`, `AI_LLM_TIMEOUT_MS` | no | off | Optional LLM translator (see below) |
 
-Responses never include `passwordHash`. Validation errors return `400` with a `details` list.
 
-## Books API
-All routes need `Authorization: Bearer <token>` and only ever see the logged-in user's own books. A missing book and another user's book both return `404 {"error":"Book not found"}`. An invalid `:id` (not a positive integer) returns `400`.
+## AI Query Agent
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/books` | Create a book. Returns `201` with the book. The owner is always the caller; any `userId` in the body is ignored. |
-| GET | `/api/books` | List your books (see query parameters). Returns `{ books, page, limit, total }`. |
-| GET | `/api/books/:id` | Get one book. |
-| PATCH | `/api/books/:id` | Partial update. Send at least one field. The owner cannot be changed. |
-| DELETE | `/api/books/:id` | Delete a book. Returns `204`. |
+A question never becomes SQL. It is translated into an **intent** (a name from a fixed list plus validated parameters), and the backend runs a fixed, parameterised query for that intent. The answer text and table are built by the backend, never by a model.
 
-**Book fields:** `title` (max 200), `author` (max 150), `genre` (max 50), `price` (JSON number, 0 to 99999999.99, at most 2 decimals), `status` (`reading`, `completed` or `to-read`; default `to-read`).
+1. A **rule-based parser** understands the common questions. This part needs nothing extra.
+2. An **optional LLM translator** is tried only when the rules do not understand a question. It receives the question text and the list of intents, never any data, and its answer is validated. Anything invalid becomes "I don't understand that question yet".
 
-**List query parameters:**
+Safety rules: normal users are always limited to their own books (taken from the login token, never from the question). Questions about other users (owners, popularity, user counts) are admin-only. Questions are limited to 300 characters, answers to 25 rows, and each user to 30 questions per minute.
 
-| Param | Values | Default |
-|---|---|---|
-| `genre` | exact match, case-insensitive | none |
-| `status` | `reading`, `completed`, `to-read` | none |
-| `q` | case-insensitive text found in title or author | none |
-| `sort` | `createdAt`, `title`, `price` | `createdAt` |
-| `order` | `asc`, `desc` | `desc` |
-| `page` | integer >= 1 | `1` |
-| `limit` | integer 1 to 50 | `10` |
+**Enable the LLM** (it is off by default; both `AI_LLM_BASE_URL` and `AI_LLM_MODEL` are required). For Ollama running on your computer, add to `.env` and run `docker compose up -d`:
 
-Invalid query values return `400`.
+```
+AI_LLM_BASE_URL=
+AI_LLM_MODEL=
+AI_LLM_TIMEOUT_MS=
+```
+ In the chat widget, an answer's "Understood as" line shows `rules` or `AI`. The first question can be slow while the model loads, so a longer timeout helps.
+
+## Project structure
+
+```
+backend/        Express API: src/ (ai, controllers, routes, middleware, validation, lib),
+                prisma/ (schema, migrations, seeds), tests/
+frontend/       React app: src/ (pages, components, layouts, context, lib, config)
+docker/         One Dockerfile (backend and frontend targets), nginx.conf, container start script
+docs/           SPEC.md (the task)
+docker-compose.yml
+```
 
 ## Tests
-Backend tests use Vitest + Supertest and run against the real database, so Postgres must be running and `JWT_SECRET` must be set:
-```bash
-cd backend
-npm test
+
 ```
-Tests create users with `auth-test-...@example.test` emails and delete only those.
-
-## Frontend
-**Environment variable** (`frontend/.env`, copied from `frontend/.env.example`):
-
-| Variable | Meaning |
-|---|---|
-| `VITE_API_URL` | Base URL of the backend API, e.g. `http://localhost:5000`. Restart `npm run dev` after changing it. |
-
-**How auth works in the UI**
-- `/register` and `/login` call the auth API. The returned token is stored in `localStorage` (key `token`) and sent as `Authorization: Bearer <token>` on every request.
-- On page load, if a token is stored, the app calls `GET /api/auth/me` to restore the user. If that fails the token is cleared.
-- `/books` is protected: logged-out visitors are redirected to `/login`. Logged-in users who open `/login` or `/register` are redirected to `/books`.
-- If the API answers `401` for any other request (for example an expired token), the token is cleared and the user is sent to `/login`. A `401` on the login or register form is shown as an error message instead.
-- Logout clears the token. Unknown URLs show a "Page not found" page.
-- `/dashboard` and `/users` are admin-only: other users are redirected to `/books` (the backend is the real check). Both are "Coming soon" placeholders, and so is the content of `/books` for now.
-
-**Frontend structure** (`frontend/src`)
-
-| Folder | What is in it |
-|---|---|
-| `api/` | Axios client, token storage, 401 handling |
-| `context/` | `AuthContext.jsx` (provider), `auth-context.js`, `useAuth.js` |
-| `components/ui/` | Shared building blocks: `Button`, `Card`, `Badge`, `FormField`, `ErrorBox`, `Skeleton`, `EmptyState`, `Logo`, `Icon` |
-| `components/guards/` | `ProtectedRoute`, `GuestRoute`, `AdminRoute` |
-| `components/` | `Sidebar`, `TopBar`, `AuthSplit` (shared login/register layout) |
-| `layouts/` | `GuestLayout` (logged-out pages) and `AppLayout` (sidebar + top bar for logged-in pages) |
-| `config/` | `app.js` (app name) and `nav.js` (sidebar links and which roles see them) |
-| `pages/` | One file per page |
-| `lib/` | Small helpers (form checks, page title hook) |
-
-**Changing the theme:** all colors, the font and the corner radius are tokens in the `@theme` block at the top of `frontend/src/index.css`. Components only use token classes such as `bg-card`, `text-ink`, `bg-accent` or `rounded-card`, so editing a value there changes the whole app. Token groups: sidebar, surface/text, accent (also used for the keyboard focus ring), book status colors, danger, radius. To rename the app, edit `APP_NAME` in `frontend/src/config/app.js`. To add a sidebar link, add an entry to `frontend/src/config/nav.js`.
-
-
-## Project layout
+cd backend && npm test     # needs the database running (docker compose up -d db)
+cd frontend && npm test
 ```
-backend/    Express API, Prisma schema, migrations, seed
-frontend/   React app
-docs/       Project spec
-docker-compose.yml   Postgres 16
-```
+
+The backend tests use the real database. They create users whose emails start with `auth-test-` and delete only those, so your own data is untouched. No test calls a real LLM.
+
+## Security notes
+
+- Passwords are hashed with bcrypt, and the password hash is never returned by the API.
+- Login tokens are signed JWTs. The role is never accepted from client input, and an admin cannot demote or delete themselves.
+- Normal users never see other users' names or emails (not even through recommendations or the assistant).
+- Secrets live only in the root `.env`, which is git-ignored and never copied into a Docker image.
+- The database is not reachable from the network, only from your own computer.
+- `npm audit` reports 4 high-severity warnings in the Prisma CLI's own dependencies. That tool is used for migrations and seeding, not by the API while it handles requests.
